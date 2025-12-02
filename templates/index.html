@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <title>OCR App</title>
+  <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>OCR & PDF Text Extractor</h1>
+
+    <form method="POST" enctype="multipart/form-data">
+      <div class="upload-box" id="upload-box">
+        <p>Trage fișierul aici sau selectează-l manual (imagine sau PDF)</p>
+        <input type="file" name="file" accept="image/*,.pdf" required>
+      </div>
+      <button type="submit">Extrage textul</button>
+    </form>
+
+    {% if text %}
+    <div class="result">
+      <h2>Text extras:</h2>
+      <textarea readonly>{{ text }}</textarea>
+
+      {% if corrected_text %}
+        <h2>Text corectat:</h2>
+        <textarea readonly id="corrected-text">{{ corrected_text }}</textarea>
+
+        <div class="buttons">
+          <button id="generate-summary">Generează rezumat</button>
+          <button id="tts-button">Ascultă textul</button>
+        </div>
+
+        <audio id="tts-audio" controls style="display:none; margin-top:10px;"></audio>
+
+        <div id="summary-container"></div>
+
+        <br>
+        <label for="lang-select">Tradu textul în:</label>
+        <select id="lang-select">
+          {% for lang_name, lang_code in languages.items() %}
+            <option value="{{ lang_code }}">{{ lang_name }}</option>
+          {% endfor %}
+        </select>
+        <button id="translate-text">Tradu</button>
+        <div id="translated-container"></div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+<script>
+  document.getElementById("generate-summary").addEventListener("click", () => {
+    const correctedText = document.getElementById("corrected-text").value;
+    fetch("/generate_summary", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({corrected_text: correctedText})
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("summary-container").innerHTML =
+            "<h2>Rezumat:</h2><textarea readonly>" + data.summary + "</textarea>";
+    });
+  });
+
+  document.getElementById("translate-text").addEventListener("click", () => {
+    const correctedText = document.getElementById("corrected-text").value;
+    const targetLang = document.getElementById("lang-select").value;
+    fetch("/translate", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({corrected_text: correctedText, target_lang: targetLang})
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("translated-container").innerHTML =
+            "<h2>Text tradus:</h2><textarea readonly>" + data.translated_text + "</textarea>";
+    });
+  });
+
+  document.getElementById("tts-button")?.addEventListener("click", () => {
+    const correctedText = document.getElementById("corrected-text").value;
+    if (!correctedText.trim()) {
+      alert("Nu există text corectat de citit!");
+      return;
+    }
+
+    fetch("/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ corrected_text: correctedText })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.audio_url) {
+        const audio = document.getElementById("tts-audio");
+        audio.src = data.audio_url;
+        audio.style.display = "block";
+        audio.play();
+      } else {
+        alert(data.error || "Eroare la generarea fișierului audio.");
+      }
+    });
+  });
+</script>
+</body>
+</html>

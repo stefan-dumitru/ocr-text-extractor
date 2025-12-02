@@ -1,0 +1,1 @@
+from .translate_text_service import translate_text

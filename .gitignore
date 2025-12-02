@@ -1,0 +1,23 @@
+# Environment
+venv/
+.env
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# User uploaded files
+uploads/
+
+# Generated TTS audio
+static/tts/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

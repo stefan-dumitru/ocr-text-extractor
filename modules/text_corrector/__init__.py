@@ -1,0 +1,1 @@
+from .text_corrector_service import correct_text
